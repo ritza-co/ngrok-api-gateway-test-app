@@ -1,0 +1,9 @@
+services:
+  auth:
+    build: ./auth-service
+    ports:
+      - "5001:5001"
+  agent-portal:
+    build: ./agent-portal
+    ports:
+      - "5002:5002"

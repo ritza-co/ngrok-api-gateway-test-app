@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+ <head>
+   <title>Agent Portal</title>
+   <style>
+     body {
+       background-color: #111;
+       color: #eee;
+       font-family: Arial, sans-serif;
+       text-align: center;
+       padding-top: 50px;
+     }
+     button {
+       background-color: #008CBA;
+       color: white;
+       padding: 10px 20px;
+       border: none;
+       font-size: 16px;
+       cursor: pointer;
+     }
+     #result {
+       margin-top: 20px;
+       font-size: 18px;
+       white-space: pre-wrap;
+     }
+   </style>
+   <script>
+     async function accessMissionBriefing() {
+       const response = await fetch('/check_auth');
+       const data = await response.json();
+       document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+     }
+   </script>
+ </head>
+ <body>
+   <h1>Welcome, Agent</h1>
+   <p>Access your mission briefing by clicking the button below.</p>
+   <button onclick="accessMissionBriefing()">Access Mission Briefing</button>
+   <div id="result"></div>
+ </body>
+</html>
+
