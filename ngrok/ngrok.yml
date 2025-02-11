@@ -2,10 +2,18 @@ version: "3"
 agent:
   authtoken: 2seztRxvq854XsC72M1zg1hNiOt_87SCCxHFQEtwDjfd41NRm
 
-tunnels:
-  auth:
-    addr: auth:5001
-    proto: http
-  agent-portal:
-    addr: agent-portal:5002
-    proto: http
+endpoints:
+  - name: auth-endpoint
+    upstream:
+      url: http://auth:5001
+    traffic_policy:
+      on_http_request:
+        - actions:
+            - type: basic-auth
+              config:
+                credentials:
+                  - "admin:super-secret-password"
+                  
+  - name: agent-portal-endpoint
+    upstream:
+      url: http://agent-portal:5002

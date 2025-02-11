@@ -24,15 +24,6 @@ async def check_auth():
     auth_response = response.json()
     
     # Format the mission briefing with structured details.
-    mission_briefing = {
-        "mission_title": "Operation Silent Strike",
-        "mission_objective": "Gather Intelligence on Target Organization",
-        "mission_details": (
-            "Agent, your mission, should you choose to accept it, involves infiltrating "
-            "the enemy's secure facility, obtaining classified documents, and exfiltrating "
-            "without detection. Exercise extreme caution and follow established protocols."
-        ),
-        "auth": auth_response
-    }
+    mission_briefing = auth_response
     
     return mission_briefing
