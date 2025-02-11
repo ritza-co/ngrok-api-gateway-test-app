@@ -3,7 +3,20 @@ services:
     build: ./auth-service
     ports:
       - "5001:5001"
+
   agent-portal:
     build: ./agent-portal
     ports:
       - "5002:5002"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: "start --all --config /etc/ngrok/ngrok.yml"
+    volumes:
+      - ./ngrok/ngrok.yml:/etc/ngrok/ngrok.yml
+    depends_on:
+      - auth
+      - agent-portal
+    ports:
+      - "443:443"
+      - "444:444"
