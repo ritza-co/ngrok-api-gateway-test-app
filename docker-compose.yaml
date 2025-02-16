@@ -1,5 +1,35 @@
 services:
-  auth:
+  kong-database:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong
+      POSTGRES_DB: kong
+    ports:
+      - "5432:5432"
+
+  kong:
+    image: kong/kong-gateway:latest
+    restart: always
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    depends_on:
+      - kong-database
+    ports:
+      - "8000:8000"  # Public API Gateway
+      - "8443:8443"  # HTTPS API Gateway
+      - "8001:8001"  # Admin API
+
+  auth-service:
     build: ./auth-service
     ports:
       - "5001:5001"
@@ -8,15 +38,3 @@ services:
     build: ./agent-portal
     ports:
       - "5002:5002"
-
-  ngrok:
-    image: ngrok/ngrok:latest
-    command: "start --all --config /etc/ngrok/ngrok.yml"
-    volumes:
-      - ./ngrok/ngrok.yml:/etc/ngrok/ngrok.yml
-    depends_on:
-      - auth
-      - agent-portal
-    ports:
-      - "443:443"
-      - "444:444"

@@ -1,0 +1,27 @@
+_format_version: "3.0"
+
+services:
+  - name: auth-service
+    url: http://localhost:5001  # Updated to localhost
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+  - name: agent-portal
+    url: http://localhost:5002  # Updated to localhost
+    routes:
+      - name: agent-portal-route
+        paths:
+          - /agent-portal
+
+plugins:
+  - name: rate-limiting
+    service: auth-service
+    config:
+      minute: 20
+      policy: local
+  - name: rate-limiting
+    service: agent-portal
+    config:
+      minute: 50
+      policy: local
