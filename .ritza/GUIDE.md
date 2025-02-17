@@ -2,7 +2,7 @@
 
 In this guide, we'll set up an ngrok agent as an API gateway to expose multiple services running on Docker containers. 
 
-We'll also show how to add basic authentication using ngrok's traffic policies.
+We'll also show the equivalent setup using Kong as an API gateway.
 
 ## The setup
 
@@ -150,3 +150,132 @@ And we can verfy this by going to the auth-service endpoint:
 Enter the credentials and you should see the auth hello message:
 
 ![](./assets/hello-from-auth-service.png)
+
+# Setting up Kong as an API gateway
+
+After signing up for Kong Konnect and creating a Hybrid Self-Hosted Service, Kong will provide you with a Docker run script from the Konnect dashboard. This script is required to start the Kong Gateway as a data plane that connects to Konnect’s control plane.
+
+
+## 1. Sign Up and Create a Hybrid Gateway in Konnect
+
+1. **Go to Kong Konnect and sign up.**
+2. **Navigate to Gateway Manager → Create a New Gateway.**
+3. **Select _Self-Managed Hybrid_ as the deployment method.**
+
+![](kong-self-managed-option.png)
+
+4. **You'll see a list of methods to run the gateway locally, for this guide we'll use Docker.**
+
+![](kong-run-docker.png)
+
+You’ll also see a pre-configured Docker run command that looks like this:
+
+```bash
+docker run -d \
+  -e "KONG_ROLE=data_plane" \
+  -e "KONG_DATABASE=off" \
+  -e "KONG_VITALS=off" \
+  -e "KONG_CLUSTER_MTLS=pki" \
+  -e "KONG_CLUSTER_CONTROL_PLANE=<your-control-plane>.us.cp0.konghq.com:443" \
+  -e "KONG_CLUSTER_SERVER_NAME=<your-control-plane>.us.cp0.konghq.com" \
+  -e "KONG_CLUSTER_TELEMETRY_ENDPOINT=<your-control-plane>.us.tp0.konghq.com:443" \
+  -e "KONG_CLUSTER_TELEMETRY_SERVER_NAME=<your-control-plane>.us.tp0.konghq.com" \
+  -e "KONG_CLUSTER_CERT=<your-cluster-cert>" \
+  -e "KONG_CLUSTER_CERT_KEY=<your-cluster-cert-key>" \
+  -e "KONG_LUA_SSL_TRUSTED_CERTIFICATE=system" \
+  -e "KONG_KONNECT_MODE=on" \
+  -e "KONG_CLUSTER_DP_LABELS=created-by:docker,env:production" \
+  -p 8000:8000 \
+  -p 8443:8443 \
+  kong/kong-gateway:latest
+```
+
+This command configures the data plane node to connect to Konnect's control plane, enabling remote management while maintaining local traffic handling. The container exposes standard HTTP and HTTPS ports for API traffic.
+
+If the connection to Konnect’s control plane is successful, you should see a message like this:
+
+![](./assets/kong-gateway-started.png)
+
+
+## 2. Register Services and Routes in using DecK
+
+Next, we'll use decK to register services and routes with our gateway
+
+### Install decK
+
+- **macOS:**
+
+  ```bash
+  brew install kong/deck/deck
+  ```
+
+### Define a `kong.yaml`
+
+Create a file named `kong.yaml` with the following content:
+
+```yaml
+_format_version: "3.0"
+
+services:
+  - name: auth-service
+    url: http://localhost:5001
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+
+  - name: agent-portal
+    url: http://localhost:5002
+    routes:
+      - name: agent-portal-route
+        paths:
+          - /agent-portal
+
+plugins:
+  - name: rate-limiting
+    service: auth-service
+    config:
+      minute: 20
+      policy: local
+
+  - name: rate-limiting
+    service: agent-portal
+    config:
+      minute: 50
+      policy: local
+
+  - name: basic-auth
+    service: auth-service
+```
+
+The configuration establishes rate limiting and authentication policies for both services. The auth service receives stricter rate limits and requires basic authentication.
+
+### Sync Configuration with Konnect
+
+Run the following command to apply the configuration:
+
+```bash
+deck sync --state kong.yaml \
+  --konnect-control-plane-name="Local Docker container agent portal" \
+  --konnect-token="<your-konnect-token>"
+```
+
+This synchronization applies the local configuration to your Kong control plane, establishing the defined services and policies.
+
+## 3. Test Public Access to the Services
+
+### Testing Rate Limits
+
+```bash
+for i in {1..21}; do curl -X GET https://<your-kong-konnect-host>:8000/auth; done
+```
+
+*Expected result:* The 21st request should return `429 Too Many Requests`.
+
+
+## 4. Make Kong Gateway Fully Public
+
+Unlike ngrok, Kong does not automatically provide a public URL. You need to expose it manually.
+
+
+# Setting up Cloudflare Tunnel as an API gateway
