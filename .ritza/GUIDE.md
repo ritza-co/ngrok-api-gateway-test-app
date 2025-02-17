@@ -35,11 +35,17 @@ A request from a client enters Ngrok’s global network, where broad traffic pol
 Kong divides responsibilities between a data plane that directly handles client requests and a control plane that manages configuration and policies. This separation allows for robust management of API traffic and detailed control over service routes and security policies.
 
 ```mermaid
-graph TD
-    A[Client Request] --> B[Kong Gateway (Data Plane)]
-    B --> C[Auth Service]
-    B --> D[Agent Portal]
-    B --- E[Kong Control Plane]
+graph LR
+    A[Client Request]
+    B[Ngrok Global Network]
+    C[Ngrok Agent]
+    D[Auth Service]
+    E[Agent Portal]
+
+    A --> B
+    B --> C
+    C --> D
+    C --> E
 ```
 
 **Explanation:**
