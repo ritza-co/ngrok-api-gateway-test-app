@@ -16,13 +16,15 @@ Ngrok’s model is built around simplicity and speed. In this architecture, ever
 ```mermaid
 graph LR
     A[Client Request]
-B[Ngrok Global Network]
-    C[Ngrok Agent]
+    B[Ngrok Global Network]
+    G["Global Traffic Policies (Rate Limiting, etc.)"]
+    C["Ngrok Agent with Local Rules"]
     D[Auth Service]
     E[Agent Portal]
 
     A --> B
-    B --> C
+    B --> G
+    G --> C
     C --> D
     C --> E
 ```
@@ -37,8 +39,9 @@ Kong divides responsibilities between a data plane that directly handles client 
 ```mermaid
 graph TD
     A[Client Request] --> B["Kong Gateway (Data Plane)"]
-    B --> C[Auth Service]
-    B --> D[Agent Portal]
+    B --> R["Rate Limiting Check"]
+    R --> C[Auth Service]
+    R --> D[Agent Portal]
     B --- E["Kong Control Plane"]
 ```
 
@@ -52,13 +55,15 @@ Cloudflare Tunnel uses Cloudflare’s global network to secure and expose your s
 ```mermaid
 graph LR
     A[Client Request]
-B[Cloudflare Network]
+    B[Cloudflare Network]
+    F[Cloudflare Edge<br/>Rate Limiting]
     C[Cloudflare Tunnel]
     D[Auth Service]
     E[Agent Portal]
 
     A --> B
-    B --> C
+    B --> F
+    F --> C
     C --> D
     C --> E
 ```
