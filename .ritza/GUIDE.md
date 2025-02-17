@@ -278,4 +278,125 @@ for i in {1..21}; do curl -X GET https://<your-kong-konnect-host>:8000/auth; don
 Unlike ngrok, Kong does not automatically provide a public URL. You need to expose it manually.
 
 
-# Setting up Cloudflare Tunnel as an API gateway
+# Setting up Cloudflare Tunnel as an API Gateway
+
+In this guide, we’ll set up Cloudflare Tunnel as an API Gateway to expose multiple services running on Docker containers. This method allows you to securely route traffic to your local services without exposing your public IP or opening firewall ports.
+
+We’ll also show how to enforce authentication and rate limiting using Cloudflare’s security features.
+
+## 1. Sign Up and Create a Cloudflare Tunnel
+
+1. Go to Cloudflare Dashboard and sign up.
+2. Navigate to Zero Trust → Access → Tunnels.
+3. Click “Create a Tunnel”.
+4. Give your tunnel a name (e.g., my-api-gateway).
+5. Select “Docker” as the installation method.
+
+Cloudflare will provide a Docker run command that looks like this:
+
+```bash
+docker run -d --name cloudflared \
+  cloudflare/cloudflared:latest tunnel --no-autoupdate run --token <YOUR_CLOUDFLARE_TUNNEL_TOKEN>
+```
+
+This command starts the Cloudflare Tunnel agent, which connects your local machine to Cloudflare’s network.
+
+## 2. Start API Services
+
+Next, start your local services. These will be exposed through the Cloudflare Tunnel.
+
+```bash
+docker run -d --name auth-service -p 5001:5001 your-auth-service-image
+docker run -d --name agent-portal -p 5002:5002 your-agent-portal-image
+```
+
+Alternatively, if you are using Docker Compose, start the services with:
+
+```bash
+docker-compose up -d auth-service agent-portal
+```
+
+```yaml docker-compose.yml
+services:
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "5001:5001"
+
+  agent-portal:
+    build: ./agent-portal
+    ports:
+      - "5002:5002"
+```
+
+Verify that both services are running:
+
+```bash
+docker ps
+```
+
+## 3. Configure Cloudflare Tunnel to Route Traffic
+
+After starting the tunnel, configure public hostnames in Cloudflare’s Zero Trust Dashboard:
+
+1. Go to Cloudflare Zero Trust → Access → Tunnels.
+2. Click on your active tunnel.
+3. Add a new Public Hostname for each service:
+   - `auth.<your-domain>.com` → `http://auth-service:5001`
+   - `portal.<your-domain>.com` → `http://agent-portal:5002`
+
+
+## 4. Apply Security Policies
+
+Cloudflare allows security rules to be enforced at the edge, protecting your services from unauthorized access and abuse.
+
+### Rate Limiting
+
+Lets set up rate limits for our services. Go to your domain Dashboard → Security → WAF and create a new Rate Limiting Rule.
+
+Note: The free tier only allows one rate limiting rule.
+
+1. Give your rule a name (e.g., auth-rule).
+2. Add the matching condition: `(http.request.uri.host eq "auth.<your-domain>.com")` for the auth-service. 
+3. Under the "When rate exceeds" section, set the request limit to 2 and the period to 10 seconds.
+4. For the "Then take action" section, choose "Block" to block requests that exceed the limit.
+5. Finally for the "For duration" section, set the duration to 10 seconds.
+
+Repeat the same steps for the agent-portal service, but with different limits.
+
+
+![Cloudflare rate limiting](./assets/cloudflare-rate-limiting.png)
+
+## 5. Test Public Access
+
+Once everything is set up, test access to your services.
+
+```bash
+curl -i https://auth.example.com
+```
+
+```bash
+curl -i https://agent-portal.example.com
+```
+
+
+### Check Rate Limits
+
+```bash
+for i in {1..21}; do curl -X GET https://auth.example.com; done
+```
+
+- ✅ The 21st request should return 429 Too Many Requests.
+
+## 6. Make Cloudflare Tunnel Fully Public
+
+Unlike ngrok, Cloudflare Tunnel does not automatically provide a random public URL. Instead, it uses your own domain for API exposure.
+
+To make sure your APIs are publicly accessible:
+
+1. Ensure your domain (e.g., example.com) is managed by Cloudflare.
+2. Check that your Cloudflare Tunnel routes traffic properly (`http://auth-service:5001`).
+3. Ensure your Cloudflare SSL settings are correct.
+
+Go to Cloudflare Dashboard → SSL/TLS and set encryption mode to Full.
+
