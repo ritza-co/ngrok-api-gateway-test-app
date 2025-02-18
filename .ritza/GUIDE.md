@@ -5,80 +5,40 @@ This guide explores three popular API gateway options—Ngrok, Kong, and Cloudfl
 ## Overview
 
 Each of these gateways works as an intermediary between your clients and backend services. They handle incoming requests, enforce security or traffic policies, and route traffic to your services. However, they differ in design and operation:
+
 - **Ngrok** offers a lightweight, flexible approach. It acts as a global entry point where you can apply universal rules like rate limiting or basic authentication. Its unopinionated design means it can easily integrate with hybrid or multi-cloud setups.
-- **Kong** takes a traditional API gateway route, splitting responsibilities between a data plane (handling API traffic) and a centralized control plane for configuration and policy management. This model suits environments that demand granular control and detailed traffic management.
-- **Cloudflare Tunnel** leverages Cloudflare’s vast network. By exposing your services using your own domain, it provides a secure way to route traffic through Cloudflare’s infrastructure. This approach benefits from built-in security features without exposing your public IP.
+- **Kong** takes a traditional API gateway route, splitting responsibilities between a data plane (local API Gateway) and a centralized control plane (Kong Dashboard) for configuration and policy management. This model suits environments such as VPS or cloud deployments where detailed traffic control is needed.
+- **Cloudflare Tunnel** used Cloudflare’s vast network. By exposing your services using your own domain, it provides a secure way to route traffic through Cloudflare’s infrastructure before reaching your services.
 
 ## Ngrok Architecture
 
-Ngrok’s model is built around simplicity and speed. In this architecture, every client request first passes through Ngrok’s global network, where you can enforce universal rules, before being directed by a local Ngrok agent to your backend services.
+Ngrok’s model is built around simplicity and speed. In this architecture, every client request first passes through Ngrok, where you can enforce universal rules, before being directed by a local Ngrok agent to your backend services.
 
-```mermaid
-graph LR
-    A[Client Request]
-    B[Ngrok Global Network]
-    G["Global Traffic Policies (Rate Limiting, etc.)"]
-    C["Ngrok Agent with Local Rules"]
-    D[Auth Service]
-    E[Agent Portal]
+![](./assets/ngrok-diagram.png)
 
-    A --> B
-    B --> G
-    G --> C
-    C --> D
-    C --> E
-```
 
 **Explanation:**
-A request from a client enters Ngrok’s global network, where broad traffic policies—such as rate limiting or basic authentication—can be applied. The Ngrok agent running in your environment then takes over, routing the request to the appropriate backend service (for example, an authentication service or a user portal). This model emphasizes ease of setup and flexibility, making it ideal for rapid development or environments with mixed infrastructure.
+A request from a client enters Ngrok’s global network, where broad traffic policies—such as rate limiting or basic authentication—can be applied. The Ngrok agent running in your environment then takes over, routing the request to the appropriate backend service. All traffic policies are managed through the Ngrok Dashboard and applied at the agent level.
+
 
 ## Kong Architecture
 
 Kong divides responsibilities between a data plane that directly handles client requests and a control plane that manages configuration and policies. This separation allows for robust management of API traffic and detailed control over service routes and security policies.
 
-```mermaid
-graph TD
-    A[Client Request] --> B["Kong Gateway (Data Plane)"]
-    B --> R["Rate Limiting Check"]
-    R --> C[Auth Service]
-    R --> D[Agent Portal]
-    B --- E["Kong Control Plane"]
-```
+![](./assets/kong-diagram.png)
 
 **Explanation:**
-In this design, a client’s request is received by the Kong Gateway (the data plane). The gateway then forwards the request to the appropriate backend service while simultaneously consulting with the Kong Control Plane to enforce centralized policies and configurations. This setup is especially powerful for larger or more complex environments where detailed traffic control and monitoring are required.
+In this design, a client’s request is received by the Kong Gateway (the data plane). The gateway then forwards the request to the appropriate backend service while simultaneously consulting with the Kong Control Plane (Dashboard) to enforce centralized policies and configurations. All traffic routing, security policies, and rate limiting are managed through the Kong Dashboard and applied at the data plane.
 
 ## Cloudflare Tunnel Architecture
 
-Cloudflare Tunnel uses Cloudflare’s global network to secure and expose your services. With this model, your own domain is used to route traffic securely to your local services through Cloudflare’s infrastructure, taking advantage of its extensive security and performance features.
+Cloudflare Tunnel uses Cloudflare’s global network to secure and expose your services. With this model, your own domain is used to route traffic securely to your local services through Cloudflare’s infrastructure.
 
-```mermaid
-graph LR
-    A[Client Request]
-    B[Cloudflare Network]
-    F[Cloudflare Edge<br/>Rate Limiting]
-    C[Cloudflare Tunnel]
-    D[Auth Service]
-    E[Agent Portal]
-
-    A --> B
-    B --> F
-    F --> C
-    C --> D
-    C --> E
-```
+![](./assets/cloudflare-diagram.png)
 
 **Explanation:**
-Here, a client’s request is directed to your domain, which is served by Cloudflare’s global network. The Cloudflare Tunnel, acting as a secure intermediary, receives the request and forwards it to the relevant backend service. This method minimizes exposure of your internal IP addresses and leverages Cloudflare’s security measures, making it particularly useful if you’re already managing your domain through Cloudflare.
+Here, a client’s request is directed to your domain, which is served by Cloudflare’s global network. The Cloudflare tunnel receives the request and forwards it to the relevant backend service. All rate limiting, security policies, and traffic routing are managed through Cloudflare’s Zero Trust Dashboard and are applied at the edge.
 
-## Summary
-
-Choosing the right API gateway depends on your specific needs:
-- **Ngrok** is a great option when you need a fast, flexible solution that is easy to set up, especially for hybrid or multi-cloud environments.
-- **Kong** is suited for scenarios where you need comprehensive traffic management and centralized control, ideal for larger or more complex deployments.
-- **Cloudflare Tunnel** offers secure, domain-based exposure of your services, integrating well with Cloudflare’s network and security features.
-
-By understanding these architectural differences and the focus of each tool, you can better align your choice of API gateway with your operational requirements and infrastructure strategy.
 
 # Setting Up ngrok as an API gateway
 
