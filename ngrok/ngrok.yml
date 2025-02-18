@@ -1,0 +1,39 @@
+version: "3"
+agent:
+  authtoken: "2seztRxvq854XsC72M1zg1hNiOt_87SCCxHFQEtwDjfd41NRm"
+
+endpoints:
+  - name: auth-endpoint
+    upstream:
+      url: http://auth:5001
+    traffic_policy:
+      on_http_request:
+        - actions:
+            - type: rate-limit
+              config:
+                name: auth-rate-limit
+                algorithm: sliding_window
+                capacity: 20
+                rate: 60s
+                bucket_key:
+                  - conn.ClientIP
+            - type: basic-auth
+              config:
+                credentials:
+                  - "admin:securepassword"
+
+  - name: agent-portal-endpoint
+    traffic_policy:
+      on_http_request:
+        - actions:
+            - type: rate-limit
+              config:
+                name: agent-portal-rate-limit
+                algorithm: sliding_window
+                capacity: 50
+                rate: 60s
+                bucket_key:
+                  - conn.ClientIP
+    upstream:
+      url: http://agent-portal:5002
+      protocol: http1
