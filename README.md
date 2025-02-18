@@ -1,4 +1,5 @@
-Switch to the [ngrok-agent](https://github.com/ritza-co/ngrok-api-gateway-test-app/tree/ngrok-agent) branch for the ngrok guide + example repo
+[Read the guide](.ritza/GUIDE.md)
+
 ## How to Run
 
 1. Build and start the services using Docker Compose:
