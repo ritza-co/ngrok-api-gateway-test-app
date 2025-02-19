@@ -2,13 +2,13 @@ _format_version: "3.0"
 
 services:
   - name: mission-service
-    url: http://localhost:5001  # Updated to localhost
+    url: http://localhost:5001 
     routes:
       - name: mission-service-route
         paths:
           - /mission-service
   - name: agent-portal
-    url: http://localhost:5002  # Updated to localhost
+    url: http://localhost:5002 
     routes:
       - name: agent-portal-route
         paths:
