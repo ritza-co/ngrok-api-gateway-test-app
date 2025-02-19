@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from fastapi.responses import FileResponse
 import httpx
 import os
@@ -13,17 +13,17 @@ async def homepage():
     return FileResponse(file_path)
 
 @app.get("/check_auth")
-async def check_auth():
-    # Simulated token to send to the Auth Service.
-    token = "Agent007"
-    headers = {"Authorization": f"Bearer {token}"}
+async def check_auth(authorization: str = Header(None)):
+    # Send the token to the Auth Service.
+    headers = {"Authorization": authorization}
     
     # Call the Auth Service using its Docker Compose hostname.
     async with httpx.AsyncClient() as client:
-        response = await client.get("http://auth:5001/validate", headers=headers)
+        response = await client.get("http://mission-service:5001/validate", headers=headers)
     auth_response = response.json()
     
     # Format the mission briefing with structured details.
     mission_briefing = auth_response
     
     return mission_briefing
+

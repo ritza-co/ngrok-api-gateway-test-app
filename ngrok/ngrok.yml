@@ -3,9 +3,7 @@ agent:
   authtoken: "2seztRxvq854XsC72M1zg1hNiOt_87SCCxHFQEtwDjfd41NRm"
 
 endpoints:
-  - name: auth-endpoint
-    upstream:
-      url: http://auth:5001
+  - name: mission-service-endpoint
     traffic_policy:
       on_http_request:
         - actions:
@@ -21,19 +19,21 @@ endpoints:
               config:
                 credentials:
                   - "admin:securepassword"
+    upstream:
+      url: http://mission-service:5001
 
-  - name: agent-portal-endpoint
+  - name: portal-service-endpoint
     traffic_policy:
       on_http_request:
         - actions:
             - type: rate-limit
               config:
-                name: agent-portal-rate-limit
+                name: portal-service-rate-limit
                 algorithm: sliding_window
                 capacity: 50
                 rate: 60s
                 bucket_key:
                   - conn.ClientIP
     upstream:
-      url: http://agent-portal:5002
+      url: http://portal-service:5002
       protocol: http1

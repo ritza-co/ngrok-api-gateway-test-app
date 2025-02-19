@@ -48,13 +48,13 @@ We'll also show the equivalent setup using Kong as an API gateway.
 
 ## The setup
 
-This is a basic setup with two services: `auth-service` and `agent-portal`.
+This is a basic setup with two services: `mission-service` and `portal-service`.
 
 ![](./assets/diagram.png)
 
-The `agent-portal` service contains a really simple frontend that makes a request to the `auth-service` for authentication and fetches a secret message for James Bond.
+The `portal-service` contains a really simple frontend that makes a request to the `mission-service` for authentication and fetches a secret message for James Bond.
 
-The `auth-service` should ideally have some traffic policies in place to ensure only authenticated requests are allowed. In this example, we'll add basic authentication using ngrok's traffic policies to add a username and password. This way, the `agent-portal` service can freely make requests to the `auth-service` without worrying about authentication, while any external requests will need to provide the correct credentials.
+The `mission-service` should ideally have some traffic policies in place to ensure only authenticated requests are allowed. In this example, we'll add basic authentication using ngrok's traffic policies to add a username and password. This way, the `portal-service` can freely make requests to the `mission-service` without worrying about authentication, while any external requests will need to provide the correct credentials.
 
 
 ## 1. Sign Up and Get an ngrok API Key
@@ -100,9 +100,9 @@ agent:
   authtoken: "YOUR_NGROK_AUTH_TOKEN"
 
 endpoints:
-  - name: auth-endpoint
+  - name: mission-endpoint
     upstream:
-      url: http://auth:5001
+      url: http://mission-service:5001
     traffic_policy:
       on_http_request:
         - actions:
@@ -111,12 +111,12 @@ endpoints:
                 credentials:
                   - "admin:super-secret-password"
 
-  - name: agent-portal-endpoint
+  - name: portal-service-endpoint
     upstream:
-      url: http://agent-portal:5002
+      url: http://portal-service:5002
 ```
 
-This configuration sets up two endpoints: `auth-endpoint` and `agent-portal-endpoint`. The `auth-endpoint` has an authentication policy in place.
+This configuration sets up two endpoints: `mission-endpoint` and `portal-service-endpoint`. The `mission-endpoint` has an authentication policy in place.
 
 Our ngrok agent can use this configuration on startup.
 
@@ -125,19 +125,19 @@ Our ngrok agent can use this configuration on startup.
 
 We'll add an ngrok agent service to our `docker-compose.yml` file. We'll also add a network to allow the services to communicate with each other and we'll add the config file for the ngrok agent as a volume.
 
-This service will forward traffic to our auth and agent-portal services. 
+This service will forward traffic to our mission and portal services. 
 
 ```yaml
 version: '3.8'
 
 services:
-  auth:
-    build: ./auth-service
+  mission-service:
+    build: ./mission-service
     ports:
       - "5001:5001"
 
-  agent-portal:
-    build: ./agent-portal
+  portal-service:
+    build: ./portal-service
     ports:
       - "5002:5002"
 
@@ -147,8 +147,8 @@ services:
     volumes:
       - ./ngrok/ngrok.yml:/etc/ngrok/ngrok.yml
     depends_on:
-      - auth
-      - agent-portal
+      - mission-service
+      - portal-service
     ports:
       - "443:443"
       - "4040:4040"
@@ -177,15 +177,15 @@ Visit your ngrok dashboard to see the endpoints and inspect the traffic policies
 
 ![Dashboard](./assets/dashboard.png)
 
-Clicking on the endpoint that corresponds to the agent portal should show our agent portal:
+Clicking on the endpoint that corresponds to the portal service should show our portal service:
 
 ![Agent Portal](./assets/agent-portal.png)
 
-Clicking on the endpoint that corresponds to the auth service should show the traffic policy:
+Clicking on the endpoint that corresponds to the mission service should show the traffic policy:
 
 ![Traffic policy](./assets/auth-traffic-policy.png)
 
-And we can verfy this by going to the auth-service endpoint:
+And we can verfy this by going to the mission-service endpoint:
 
 ![](./assets/auth-service-sign-in.png)
 
@@ -259,38 +259,38 @@ Create a file named `kong.yaml` with the following content:
 _format_version: "3.0"
 
 services:
-  - name: auth-service
+  - name: mission-service
     url: http://localhost:5001
     routes:
-      - name: auth-route
+      - name: mission-route
         paths:
-          - /auth
+          - /mission
 
-  - name: agent-portal
+  - name: portal-service
     url: http://localhost:5002
     routes:
-      - name: agent-portal-route
+      - name: portal-route
         paths:
-          - /agent-portal
+          - /portal
 
 plugins:
   - name: rate-limiting
-    service: auth-service
+    service: mission-service
     config:
       minute: 20
       policy: local
 
   - name: rate-limiting
-    service: agent-portal
+    service: portal-service
     config:
       minute: 50
       policy: local
 
   - name: basic-auth
-    service: auth-service
+    service: mission-service
 ```
 
-The configuration establishes rate limiting and authentication policies for both services. The auth service receives stricter rate limits and requires basic authentication.
+The configuration establishes rate limiting and authentication policies for both services. The mission service receives stricter rate limits and requires basic authentication.
 
 ### Sync Configuration with Konnect
 
@@ -309,7 +309,7 @@ This synchronization applies the local configuration to your Kong control plane,
 ### Testing Rate Limits
 
 ```bash
-for i in {1..21}; do curl -X GET https://<your-kong-konnect-host>:8000/auth; done
+for i in {1..21}; do curl -X GET https://<your-kong-konnect-host>:8000/mission; done
 ```
 
 *Expected result:* The 21st request should return `429 Too Many Requests`.
@@ -348,25 +348,25 @@ This command starts the Cloudflare Tunnel agent, which connects your local machi
 Next, start your local services. These will be exposed through the Cloudflare Tunnel.
 
 ```bash
-docker run -d --name auth-service -p 5001:5001 your-auth-service-image
-docker run -d --name agent-portal -p 5002:5002 your-agent-portal-image
+docker run -d --name mission-service -p 5001:5001 your-mission-service-image
+docker run -d --name portal-service -p 5002:5002 your-portal-service-image
 ```
 
 Alternatively, if you are using Docker Compose, start the services with:
 
 ```bash
-docker-compose up -d auth-service agent-portal
+docker-compose up -d mission-service portal-service
 ```
 
 ```yaml docker-compose.yml
 services:
-  auth-service:
-    build: ./auth-service
+  mission-service:
+    build: ./mission-service
     ports:
       - "5001:5001"
 
-  agent-portal:
-    build: ./agent-portal
+  portal-service:
+    build: ./portal-service
     ports:
       - "5002:5002"
 ```
@@ -384,8 +384,8 @@ After starting the tunnel, configure public hostnames in Cloudflare’s Zero Tru
 1. Go to Cloudflare Zero Trust → Access → Tunnels.
 2. Click on your active tunnel.
 3. Add a new Public Hostname for each service:
-   - `auth.<your-domain>.com` → `http://auth-service:5001`
-   - `portal.<your-domain>.com` → `http://agent-portal:5002`
+   - `missions.<your-domain>.com` → `http://mission-service:5001`
+   - `portal.<your-domain>.com` → `http://portal-service:5002`
 
 
 ## 4. Apply Security Policies
@@ -398,13 +398,13 @@ Lets set up rate limits for our services. Go to your domain Dashboard → Securi
 
 Note: The free tier only allows one rate limiting rule.
 
-1. Give your rule a name (e.g., auth-rule).
-2. Add the matching condition: `(http.request.uri.host eq "auth.<your-domain>.com")` for the auth-service. 
+1. Give your rule a name (e.g., rate-limit-rule).
+2. Add the matching condition: `(http.request.uri.host eq "missions.<your-domain>.com")` for the mission-service. 
 3. Under the "When rate exceeds" section, set the request limit to 2 and the period to 10 seconds.
 4. For the "Then take action" section, choose "Block" to block requests that exceed the limit.
 5. Finally for the "For duration" section, set the duration to 10 seconds.
 
-Repeat the same steps for the agent-portal service, but with different limits.
+Repeat the same steps for the portal service, but with different limits.
 
 
 ![Cloudflare rate limiting](./assets/cloudflare-rate-limiting.png)
@@ -414,18 +414,18 @@ Repeat the same steps for the agent-portal service, but with different limits.
 Once everything is set up, test access to your services.
 
 ```bash
-curl -i https://auth.example.com
+curl -i https://mission.example.com
 ```
 
 ```bash
-curl -i https://agent-portal.example.com
+curl -i https://portal.example.com
 ```
 
 
 ### Check Rate Limits
 
 ```bash
-for i in {1..21}; do curl -X GET https://auth.example.com; done
+for i in {1..21}; do curl -X GET https://mission.example.com; done
 ```
 
 - ✅ The 21st request should return 429 Too Many Requests.
@@ -437,7 +437,7 @@ Unlike ngrok, Cloudflare Tunnel does not automatically provide a random public U
 To make sure your APIs are publicly accessible:
 
 1. Ensure your domain (e.g., example.com) is managed by Cloudflare.
-2. Check that your Cloudflare Tunnel routes traffic properly (`http://auth-service:5001`).
+2. Check that your Cloudflare Tunnel routes traffic properly (`http://mission-service:5001`).
 3. Ensure your Cloudflare SSL settings are correct.
 
 Go to Cloudflare Dashboard → SSL/TLS and set encryption mode to Full.

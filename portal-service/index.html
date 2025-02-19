@@ -76,6 +76,16 @@
         .show {
             display: block;
         }
+
+        input[type="text"] {
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: calc(100% - 22px); /* Adjust width to fit within container */
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -83,6 +93,8 @@
     <div class="container">
         <h1 class="heading">Welcome, Agent</h1>
         <p>Access your mission briefing by clicking the button below.</p>
+        <p>Enter your token to access the mission briefing:</p>
+        <input type="text" id="tokenInput" placeholder="Enter token here">
         <button id="missionButton" class="mission-briefing-button">Access Mission Briefing</button>
 
         <div id="missionData" class="mission-data hidden"></div>
@@ -92,6 +104,7 @@
       document.addEventListener("DOMContentLoaded", function () {
     const missionButton = document.getElementById("missionButton");
     const missionData = document.getElementById("missionData");
+    const tokenInput = document.getElementById("tokenInput");
 
     console.log("missionButton:", missionButton);
     console.log("missionData:", missionData);
@@ -110,8 +123,13 @@
     // Button click event using async/await
     missionButton.addEventListener("click", async function () {
         console.log("Button clicked!");
+        const token = tokenInput.value;
         try {
-            const response = await fetch('/check_auth');
+            const response = await fetch('/check_auth', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

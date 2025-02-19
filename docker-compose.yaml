@@ -1,10 +1,10 @@
 services:
-  auth-service:
-    build: ./auth-service
+  backend-service:
+    build: ./mission-service
     ports:
       - "5001:5001"
 
-  agent-portal:
-    build: ./agent-portal
+  frontend-service:
+    build: ./portal-service
     ports:
       - "5002:5002"

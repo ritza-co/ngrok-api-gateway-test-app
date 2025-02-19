@@ -5,7 +5,7 @@ app = FastAPI()
 
 @app.get("/")
 async def read_root():
-    return {"message": "Hello from Auth Service!"}
+    return {"message": "Hello from Mission Service!"}
 
 
 
@@ -48,7 +48,7 @@ async def validate(authorization: str = Header(None)):
     
     return {
         "status": "access_granted",
-        "token": "Agent007",
-        "message": "Agent validated. Mission briefing is now available.",
+        "token": authorization.split(" ")[1],
+        "message": f"Agent validated with token {authorization.split(' ')[1]}. Mission briefing is now available.",
         "mission_briefing": selected_mission
     }

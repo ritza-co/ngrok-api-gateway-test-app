@@ -9,6 +9,6 @@
     ```
 
 2.	Visit the endpoints:
-    Auth Service: http://localhost:5001
-    API Service: http://localhost:5002
+    Mission Service: http://localhost:5001
+    Portal Service: http://localhost:5002
 

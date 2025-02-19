@@ -1,12 +1,12 @@
 _format_version: "3.0"
 
 services:
-  - name: auth-service
+  - name: mission-service
     url: http://localhost:5001  # Updated to localhost
     routes:
-      - name: auth-route
+      - name: mission-service-route
         paths:
-          - /auth
+          - /mission-service
   - name: agent-portal
     url: http://localhost:5002  # Updated to localhost
     routes:
@@ -16,7 +16,7 @@ services:
 
 plugins:
   - name: rate-limiting
-    service: auth-service
+    service: mission-service
     config:
       minute: 20
       policy: local
