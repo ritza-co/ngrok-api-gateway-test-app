@@ -1,10 +1,10 @@
 services:
-  backend-service:
+  mission-service:
     build: ./mission-service
     ports:
       - "5001:5001"
 
-  frontend-service:
+  portal-service:
     build: ./portal-service
     ports:
       - "5002:5002"
